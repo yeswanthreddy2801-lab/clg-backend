@@ -1,9 +1,10 @@
-import { Module, Global } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { SearchService } from './search.service';
+import { SearchController } from './search.controller';
+import { SearchIndexerService } from './search.indexer.service';
 
-@Global()
 @Module({
-  providers: [SearchService],
-  exports: [SearchService],
+  controllers: [SearchController],
+  providers: [SearchService, SearchIndexerService],
 })
 export class SearchModule {}

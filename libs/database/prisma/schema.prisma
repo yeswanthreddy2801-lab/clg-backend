@@ -114,6 +114,12 @@ model UserSettings {
   privacyMessage       String   @default("everyone") // everyone, followers, none
   privacyProfile       String   @default("everyone") // everyone, followers, none
   notificationsEnabled Boolean  @default(true)
+  notifyLikes          Boolean  @default(true)
+  notifyComments       Boolean  @default(true)
+  notifyMentions       Boolean  @default(true)
+  notifyFollows        Boolean  @default(true)
+  notifyEvents         Boolean  @default(true)
+  notifyNews           Boolean  @default(true)
   appearanceDefault    String   @default("system") // light, dark, system
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
