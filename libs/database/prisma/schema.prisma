@@ -52,12 +52,17 @@ model User {
   branch       String?
   year         String?
   role         String   @default("student") // student, club_admin, college_admin, super_admin
+  skills       String[]
+  socialLinks  Json?
+  badges       String[]
   isVerified   Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
+  deactivated  Boolean  @default(false)
 
   college      College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  settings     UserSettings?
 
   // Relations
   followers          Follow[] @relation("UserFollowers")
@@ -98,8 +103,33 @@ model User {
   talentProfile      TalentProfile?
   projectViews       ProjectView[]
   referralRequests   PlacementReferralRequest[]
+  blocking           Block[] @relation("UserBlocking")
+  blockedBy          Block[] @relation("UserBlocked")
 
   @@index([collegeId])
+}
+
+model UserSettings {
+  userId               String   @id
+  privacyMessage       String   @default("everyone") // everyone, followers, none
+  privacyProfile       String   @default("everyone") // everyone, followers, none
+  notificationsEnabled Boolean  @default(true)
+  appearanceDefault    String   @default("system") // light, dark, system
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Block {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker   User @relation("UserBlocking", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User @relation("UserBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
 }
 
 
