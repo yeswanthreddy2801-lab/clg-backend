@@ -17,6 +17,7 @@ import { ClubsModule } from './modules/clubs/clubs.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { PlacementsModule } from './modules/placements/placements.module';
 import { LostAndFoundModule } from './modules/lost-and-found/lost-and-found.module';
+
 import { SearchModule } from './modules/search/search.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { MessagingModule } from './modules/messaging/messaging.module';

@@ -37,6 +37,7 @@ model College {
   auditLogs          AuditLog[]
   media              Media[]
   talentProfiles     TalentProfile[]
+  referralRequests   PlacementReferralRequest[]
 }
 
 model User {
@@ -96,9 +97,12 @@ model User {
   media              Media[]
   talentProfile      TalentProfile?
   projectViews       ProjectView[]
+  referralRequests   PlacementReferralRequest[]
 
   @@index([collegeId])
 }
+
+
 
 model Follow {
   followerId  String
@@ -701,6 +705,21 @@ model PlacementUpvote {
   experience   PlacementExperience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
 
   @@id([userId, experienceId])
+}
+
+model PlacementReferralRequest {
+  id        String   @id @default(uuid())
+  collegeId String
+  userId    String
+  company   String
+  role      String
+  message   String?
+  createdAt DateTime @default(now())
+
+  college   College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId, company])
 }
 
 model LostFoundReport {
