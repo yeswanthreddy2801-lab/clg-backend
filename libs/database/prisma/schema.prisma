@@ -95,6 +95,7 @@ model User {
   postBookmarks      PostBookmark[]
   media              Media[]
   talentProfile      TalentProfile?
+  projectViews       ProjectView[]
 
   @@index([collegeId])
 }
@@ -461,6 +462,7 @@ model Project {
   teamMembers        ProjectTeamMember[]
   bookmarks          ProjectBookmark[]
   technologies       ProjectTechnology[]
+  views              ProjectView[]
 
   @@index([collegeId, status, createdAt])
 }
@@ -512,6 +514,17 @@ model ProjectTechnology {
   technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
 
   @@id([projectId, technologyId])
+}
+
+model ProjectView {
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
 }
 
 // -----------------------------------------------------------------------------

@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
-import { CreateProjectDto } from './dto/projects.dto';
+import { CreateProjectDto, GetProjectsQueryDto } from './dto/projects.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantGuard } from '../../common/guards/tenant.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -23,17 +23,33 @@ export class ProjectsController {
   @Get()
   getProjects(
     @CurrentCollege() collegeId: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() query: GetProjectsQueryDto,
   ) {
-    return this.projectsService.getProjects(collegeId, page ? parseInt(page) : 1, limit ? parseInt(limit) : 10);
+    return this.projectsService.getProjects(collegeId, query);
   }
 
   @Get(':id')
   getProject(
+    @CurrentUser() user: any,
     @CurrentCollege() collegeId: string,
     @Param('id') projectId: string,
   ) {
-    return this.projectsService.getProject(collegeId, projectId);
+    return this.projectsService.getProject(user.userId, collegeId, projectId);
+  }
+
+  @Post(':id/bookmark')
+  bookmarkProject(
+    @CurrentUser() user: any,
+    @Param('id') projectId: string,
+  ) {
+    return this.projectsService.bookmarkProject(user.userId, projectId);
+  }
+
+  @Delete(':id/bookmark')
+  unbookmarkProject(
+    @CurrentUser() user: any,
+    @Param('id') projectId: string,
+  ) {
+    return this.projectsService.unbookmarkProject(user.userId, projectId);
   }
 }
