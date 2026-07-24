@@ -85,7 +85,7 @@ export class MediaService {
     try {
       const headCommand = new HeadObjectCommand({
         Bucket: this.bucketName,
-        Key: objectKey,
+        Key: objectKey!,
       });
       await this.s3Client.send(headCommand);
     } catch (e) {

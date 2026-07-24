@@ -21,6 +21,13 @@ export class InteractionsService {
       case 'reel':
         target = await prisma.reel.findUnique({ where: { id: targetId }, select: { collegeId: true } });
         break;
+      case 'project':
+        target = await prisma.project.findUnique({ where: { id: targetId }, select: { collegeId: true } });
+        break;
+      case 'talent':
+        // TalentProfile is keyed by userId originally, but if targetId is the profile id:
+        target = await prisma.talentProfile.findUnique({ where: { id: targetId }, select: { collegeId: true } });
+        break;
       // Other target types could be added here
       default:
         throw new NotFoundException('Unsupported target type');
@@ -55,6 +62,8 @@ export class InteractionsService {
         await tx.story.update({ where: { id: dto.targetId }, data: { likeCount: { increment: 1 } } });
       } else if (dto.targetType === 'reel') {
         await tx.reel.update({ where: { id: dto.targetId }, data: { likeCount: { increment: 1 } } });
+      } else if (dto.targetType === 'project') {
+        await tx.project.update({ where: { id: dto.targetId }, data: { likeCount: { increment: 1 } } });
       }
     });
 
@@ -84,6 +93,8 @@ export class InteractionsService {
         await tx.story.update({ where: { id: dto.targetId }, data: { likeCount: { decrement: 1 } } });
       } else if (dto.targetType === 'reel') {
         await tx.reel.update({ where: { id: dto.targetId }, data: { likeCount: { decrement: 1 } } });
+      } else if (dto.targetType === 'project') {
+        await tx.project.update({ where: { id: dto.targetId }, data: { likeCount: { decrement: 1 } } });
       }
     });
 

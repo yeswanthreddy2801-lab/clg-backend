@@ -4,7 +4,7 @@ import { Logger } from '@nestjs/common';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 
 const prisma = new PrismaClient();
 
