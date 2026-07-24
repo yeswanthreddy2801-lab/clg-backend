@@ -22,9 +22,13 @@ import { MessagingModule } from './modules/messaging/messaging.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MediaModule } from './modules/media/media.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+
+import { CommonModule } from './common/common.module';
+import { InteractionsModule } from './modules/interactions/interactions.module';
 
 @Module({
-  imports: [ConfigModule, AuthModule, UsersModule, CollegesModule, FeedModule, StoriesModule, ReelsModule, TalentModule, ProjectsModule, NewsModule, EventsModule, ClubsModule, MarketplaceModule, PlacementsModule, LostAndFoundModule, SearchModule, NotificationsModule, MessagingModule, AdminModule, MediaModule, ModerationModule],
+  imports: [ConfigModule, EventEmitterModule.forRoot(), CommonModule, InteractionsModule, AuthModule, UsersModule, CollegesModule, FeedModule, StoriesModule, ReelsModule, TalentModule, ProjectsModule, NewsModule, EventsModule, ClubsModule, MarketplaceModule, PlacementsModule, LostAndFoundModule, SearchModule, NotificationsModule, MessagingModule, AdminModule, MediaModule, ModerationModule],
   controllers: [AppController],
   providers: [AppService],
 })

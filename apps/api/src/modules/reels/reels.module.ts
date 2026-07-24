@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ReelsController } from './reels.controller';
 import { ReelsService } from './reels.service';
+import { ReelsController } from './reels.controller';
 
 @Module({
   controllers: [ReelsController],
-  providers: [ReelsService]
+  providers: [ReelsService],
 })
 export class ReelsModule {}

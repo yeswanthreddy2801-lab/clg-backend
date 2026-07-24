@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -91,6 +90,7 @@ model User {
   reportsSubmitted   Report[] @relation("ReportAuthor")
   reportsResolved    Report[] @relation("ReportResolver")
   auditLogs          AuditLog[]
+  postBookmarks      PostBookmark[]
 
   @@index([collegeId])
 }
@@ -131,6 +131,7 @@ model Post {
   comments     Comment[] @relation("PostComments")
   hashtags     PostHashtag[]
   mentions     Mention[] @relation("PostMentions")
+  bookmarks    PostBookmark[]
 
   @@index([collegeId, createdAt])
   @@index([authorId])
@@ -147,6 +148,17 @@ model PostMedia {
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
+}
+
+model PostBookmark {
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
 }
 
 // Polymorphic-ish Like, applied across modules (using targetType/targetId)
