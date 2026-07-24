@@ -5,10 +5,17 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ConfigService } from '@nestjs/config';
+import { RedisIoAdapter } from './common/adapters/redis-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
+  // Setup Redis Adapter for WebSockets
+  const configService = app.get(ConfigService);
+  const redisIoAdapter = new RedisIoAdapter(app, configService);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
+
   // Global Pipes
   app.useGlobalPipes(
     new ValidationPipe({
@@ -34,7 +41,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT') || 3000;
   
   await app.listen(port);
