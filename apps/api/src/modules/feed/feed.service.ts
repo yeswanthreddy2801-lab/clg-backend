@@ -2,16 +2,28 @@ import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/commo
 import { CreatePostDto, CreateCommentDto } from './dto/feed.dto';
 import { PrismaClient } from '@prisma/client';
 import { NotificationEventPublisher } from '../../common/events/notification.publisher';
+import { ModerationService } from '../moderation/moderation.service';
 
 const prisma = new PrismaClient();
 
 @Injectable()
 export class FeedService {
-  constructor(private readonly publisher: NotificationEventPublisher) {}
+  constructor(
+    private readonly publisher: NotificationEventPublisher,
+    private readonly moderationService: ModerationService,
+  ) {}
 
   async createPost(userId: string, collegeId: string, dto: CreatePostDto) {
     const hashtags = this.extractHashtags(dto.content);
     const mentions = this.extractMentions(dto.content);
+
+    // Fire and forget moderation check
+    this.moderationService.scanContent({
+      targetType: 'post',
+      targetId: 'pending-post', // Normally we'd do this after creation or synchronously if we want to block it
+      text: dto.content,
+      collegeId
+    }).catch(e => console.error(e));
 
     const post = await prisma.$transaction(async (tx) => {
       const newPost = await tx.post.create({

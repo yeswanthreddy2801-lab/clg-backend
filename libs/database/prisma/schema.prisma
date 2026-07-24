@@ -38,6 +38,7 @@ model College {
   media              Media[]
   talentProfiles     TalentProfile[]
   referralRequests   PlacementReferralRequest[]
+  reports            Report[]
 }
 
 model User {
@@ -856,15 +857,17 @@ model MessageReceipt {
 
 model Report {
   id               String   @id @default(uuid())
+  collegeId        String?  // Scoped to college for college_admin, null for global/super_admin
   reporterId       String
   targetType       String   // post, story, project, user, etc.
   targetId         String
   reason           String
-  status           String   @default("pending") // pending, resolved, dismissed
+  status           String   @default("pending") // pending, resolved, escalated, dismissed
   resolvedByAdminId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  college          College? @relation(fields: [collegeId], references: [id], onDelete: Cascade)
   reporter         User     @relation("ReportAuthor", fields: [reporterId], references: [id])
   resolver         User?    @relation("ReportResolver", fields: [resolvedByAdminId], references: [id])
 
@@ -885,4 +888,14 @@ model AuditLog {
   actor        User     @relation(fields: [actorId], references: [id])
 
   @@index([collegeId, createdAt])
+}
+
+model PlatformAnalytics {
+  date             DateTime @id
+  totalUsers       Int      @default(0)
+  totalPosts       Int      @default(0)
+  totalColleges    Int      @default(0)
+  activeUsersToday Int      @default(0)
+  metadataJson     Json?
+  updatedAt        DateTime @updatedAt
 }
