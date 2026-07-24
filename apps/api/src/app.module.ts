@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from './config/config.module';
@@ -26,9 +27,51 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { CommonModule } from './common/common.module';
 import { InteractionsModule } from './modules/interactions/interactions.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
-  imports: [ConfigModule, EventEmitterModule.forRoot(), CommonModule, InteractionsModule, AuthModule, UsersModule, CollegesModule, FeedModule, StoriesModule, ReelsModule, TalentModule, ProjectsModule, NewsModule, EventsModule, ClubsModule, MarketplaceModule, PlacementsModule, LostAndFoundModule, SearchModule, NotificationsModule, MessagingModule, AdminModule, MediaModule, ModerationModule],
+  imports: [
+    ConfigModule, 
+    EventEmitterModule.forRoot(), 
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+        const url = new URL(redisUrl);
+        return {
+          connection: {
+            host: url.hostname,
+            port: parseInt(url.port) || 6379,
+            username: url.username,
+            password: url.password,
+          },
+        };
+      },
+    }),
+    CommonModule,
+    InteractionsModule,
+    AuthModule,
+    UsersModule,
+    CollegesModule,
+    FeedModule,
+    StoriesModule,
+    ReelsModule,
+    TalentModule,
+    ProjectsModule,
+    NewsModule,
+    EventsModule,
+    ClubsModule,
+    MarketplaceModule,
+    PlacementsModule,
+    LostAndFoundModule,
+    SearchModule,
+    NotificationsModule,
+    MessagingModule,
+    AdminModule,
+    MediaModule,
+    ModerationModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -35,6 +35,7 @@ model College {
   placementExperiences PlacementExperience[]
   lostFoundReports   LostFoundReport[]
   auditLogs          AuditLog[]
+  media              Media[]
 }
 
 model User {
@@ -91,6 +92,7 @@ model User {
   reportsResolved    Report[] @relation("ReportResolver")
   auditLogs          AuditLog[]
   postBookmarks      PostBookmark[]
+  media              Media[]
 
   @@index([collegeId])
 }
@@ -327,6 +329,29 @@ model ReelView {
   reel      Reel     @relation(fields: [reelId], references: [id], onDelete: Cascade)
 
   @@id([userId, reelId])
+}
+
+// -----------------------------------------------------------------------------
+// MEDIA & UPLOADS
+// -----------------------------------------------------------------------------
+
+model Media {
+  id           String   @id @default(uuid())
+  authorId     String
+  collegeId    String
+  filename     String
+  mimetype     String
+  size         Int
+  url          String?
+  thumbnailUrl String?
+  status       String   @default("pending") // pending, ready, failed
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  author       User     @relation(fields: [authorId], references: [id])
+  college      College  @relation(fields: [collegeId], references: [id])
+
+  @@index([collegeId, status])
 }
 
 // -----------------------------------------------------------------------------
