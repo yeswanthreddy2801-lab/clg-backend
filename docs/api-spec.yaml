@@ -1,0 +1,6 @@
+openapi: 3.0.0
+info:
+  title: CampusVerse API
+  version: 1.0.0
+  description: API specifications for CampusVerse Backend
+paths: {}

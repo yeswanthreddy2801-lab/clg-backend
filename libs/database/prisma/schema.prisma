@@ -1,0 +1,764 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// CORE ENTITIES
+// -----------------------------------------------------------------------------
+
+model College {
+  id           String   @id @default(uuid())
+  name         String
+  domain       String   @unique
+  logoUrl      String?
+  city         String?
+  studentCount Int      @default(0)
+  status       String   @default("pending") // pending, active, suspended
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users              User[]
+  posts              Post[]
+  stories            Story[]
+  reels              Reel[]
+  talentEntries      TalentEntry[]
+  talentCompetitions TalentCompetition[]
+  projects           Project[]
+  news               NewsPost[]
+  events             Event[]
+  clubs              Club[]
+  marketplaceListings MarketplaceListing[]
+  placementExperiences PlacementExperience[]
+  lostFoundReports   LostFoundReport[]
+  auditLogs          AuditLog[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  collegeId    String
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  coverUrl     String?
+  bio          String?
+  branch       String?
+  year         String?
+  role         String   @default("student") // student, club_admin, college_admin, super_admin
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  college      College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+
+  // Relations
+  followers          Follow[] @relation("UserFollowers")
+  following          Follow[] @relation("UserFollowing")
+  posts              Post[]
+  likes              Like[]
+  comments           Comment[]
+  mentions           Mention[]
+  stories            Story[]
+  storyBookmarks     StoryBookmark[]
+  storyViews         StoryView[]
+  reels              Reel[]
+  reelViews          ReelView[]
+  talentEntries      TalentEntry[]
+  talentSubmissions  TalentSubmission[]
+  projects           Project[]
+  projectTeamMembers ProjectTeamMember[]
+  projectBookmarks   ProjectBookmark[]
+  newsPosts          NewsPost[]
+  events             Event[]
+  eventInterests     EventInterest[]
+  clubMemberships    ClubMembership[]
+  recruitmentApps    ClubRecruitmentApplication[]
+  marketplaceListings MarketplaceListing[]
+  placementExperiences PlacementExperience[]
+  placementUpvotes   PlacementUpvote[]
+  lostFoundReports   LostFoundReport[]
+  notifications      Notification[] @relation("NotificationTarget")
+  actorNotifications Notification[] @relation("NotificationActor")
+  conversations      ConversationParticipant[]
+  messages           Message[]
+  messageReceipts    MessageReceipt[]
+  reportsSubmitted   Report[] @relation("ReportAuthor")
+  reportsResolved    Report[] @relation("ReportResolver")
+  auditLogs          AuditLog[]
+
+  @@index([collegeId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+}
+
+// -----------------------------------------------------------------------------
+// FEED MODULE
+// -----------------------------------------------------------------------------
+
+model Post {
+  id           String   @id @default(uuid())
+  collegeId    String
+  authorId     String
+  type         String   // text, photo, achievement, question, poll, meme
+  content      String?
+  likeCount    Int      @default(0)
+  commentCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+  clubId       String?  // Optional relation for club-specific posts
+
+  college      College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  club         Club?    @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  media        PostMedia[]
+  likes        Like[]    @relation("PostLikes")
+  comments     Comment[] @relation("PostComments")
+  hashtags     PostHashtag[]
+  mentions     Mention[] @relation("PostMentions")
+
+  @@index([collegeId, createdAt])
+  @@index([authorId])
+}
+
+model PostMedia {
+  id        String   @id @default(uuid())
+  postId    String
+  mediaId   String   // ID in the Media module / object storage
+  mediaType String   // image, video
+  url       String
+  order     Int      @default(0)
+  
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+// Polymorphic-ish Like, applied across modules (using targetType/targetId)
+model Like {
+  id         String   @id @default(uuid())
+  userId     String
+  targetType String   // post, story, chapter, reel, project, talent
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  post       Post?    @relation("PostLikes", fields: [targetId], references: [id], map: "Like_Post_targetId_fkey")
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+// Polymorphic-ish Comment
+model Comment {
+  id              String   @id @default(uuid())
+  userId          String
+  targetType      String   // post, story, reel, project, talent
+  targetId        String
+  content         String
+  parentCommentId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentComment   Comment? @relation("Replies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[] @relation("Replies")
+
+  post            Post?    @relation("PostComments", fields: [targetId], references: [id], map: "Comment_Post_targetId_fkey")
+  
+  @@index([targetType, targetId])
+  @@index([parentCommentId])
+}
+
+model Hashtag {
+  id        String   @id @default(uuid())
+  tag       String   @unique
+  createdAt DateTime @default(now())
+
+  posts     PostHashtag[]
+}
+
+model PostHashtag {
+  postId    String
+  hashtagId String
+
+  post      Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+}
+
+model Mention {
+  id         String   @id @default(uuid())
+  userId     String
+  targetType String   // post, comment
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post       Post?    @relation("PostMentions", fields: [targetId], references: [id], map: "Mention_Post_targetId_fkey")
+
+  @@index([targetType, targetId])
+}
+
+// -----------------------------------------------------------------------------
+// STORIES MODULE
+// -----------------------------------------------------------------------------
+
+model Story {
+  id           String   @id @default(uuid())
+  collegeId    String
+  authorId     String
+  title        String
+  category     String
+  tags         String[]
+  coverMediaId String?
+  status       String   @default("draft") // draft, published
+  viewCount    Int      @default(0)
+  likeCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  college      College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  chapters     StoryChapter[]
+  bookmarks    StoryBookmark[]
+  views        StoryView[]
+
+  @@index([collegeId, createdAt])
+}
+
+model StoryChapter {
+  id                   String   @id @default(uuid())
+  storyId              String
+  title                String
+  content              String
+  order                Int
+  estimatedReadingTime Int      @default(0) // in minutes
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  story                Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+}
+
+model StoryBookmark {
+  userId          String
+  storyId         String
+  lastReadChapter String?
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story           Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, storyId])
+}
+
+model StoryView {
+  userId    String
+  storyId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, storyId])
+}
+
+// -----------------------------------------------------------------------------
+// REELS MODULE
+// -----------------------------------------------------------------------------
+
+model Reel {
+  id           String   @id @default(uuid())
+  collegeId    String
+  authorId     String
+  mediaId      String
+  caption      String?
+  category     String?
+  likeCount    Int      @default(0)
+  commentCount Int      @default(0)
+  viewCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  deletedAt    DateTime?
+
+  college      College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views        ReelView[]
+
+  @@index([collegeId, createdAt])
+}
+
+model ReelView {
+  userId    String
+  reelId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reel      Reel     @relation(fields: [reelId], references: [id], onDelete: Cascade)
+
+  @@id([userId, reelId])
+}
+
+// -----------------------------------------------------------------------------
+// TALENT HUB
+// -----------------------------------------------------------------------------
+
+model TalentEntry {
+  id           String   @id @default(uuid())
+  collegeId    String
+  authorId     String
+  title        String
+  category     String   // Singing, Rap, Dance, etc.
+  genre        String?
+  language     String?
+  mediaId      String
+  mediaType    String   // audio, video
+  likeCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  college      College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  submissions  TalentSubmission[]
+
+  @@index([collegeId, category])
+}
+
+model TalentCompetition {
+  id           String   @id @default(uuid())
+  collegeId    String
+  title        String
+  description  String
+  rules        String
+  startsAt     DateTime
+  endsAt       DateTime
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+
+  college      College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  submissions  TalentSubmission[]
+
+  @@index([collegeId, startsAt])
+}
+
+model TalentSubmission {
+  id            String   @id @default(uuid())
+  competitionId String
+  entryId       String
+  userId        String
+  judgedScore   Float?
+  createdAt     DateTime @default(now())
+
+  competition   TalentCompetition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  entry         TalentEntry       @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([competitionId, entryId])
+  @@index([competitionId])
+}
+
+// -----------------------------------------------------------------------------
+// PROJECTS SHOWCASE
+// -----------------------------------------------------------------------------
+
+model Project {
+  id                 String   @id @default(uuid())
+  collegeId          String
+  authorId           String
+  title              String
+  description        String
+  branch             String?
+  year               String?
+  difficulty         String?
+  demoLink           String?
+  githubLink         String?
+  documentationLink  String?
+  videoDemoUrl       String?
+  guideName          String?
+  status             String   @default("pending") // pending, approved, rejected
+  viewCount          Int      @default(0)
+  likeCount          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
+
+  college            College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  author             User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  media              ProjectMedia[]
+  teamMembers        ProjectTeamMember[]
+  bookmarks          ProjectBookmark[]
+  technologies       ProjectTechnology[]
+
+  @@index([collegeId, status, createdAt])
+}
+
+model ProjectMedia {
+  id        String   @id @default(uuid())
+  projectId String
+  mediaId   String
+  url       String
+  order     Int      @default(0)
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ProjectTeamMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  roleLabel String
+
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model ProjectBookmark {
+  userId    String
+  projectId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+}
+
+model Technology {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  projects  ProjectTechnology[]
+}
+
+model ProjectTechnology {
+  projectId    String
+  technologyId String
+
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, technologyId])
+}
+
+// -----------------------------------------------------------------------------
+// NEWS & EVENTS
+// -----------------------------------------------------------------------------
+
+model NewsPost {
+  id               String   @id @default(uuid())
+  collegeId        String
+  publishedByAdminId String
+  title            String
+  content          String
+  category         String
+  isPinned         Boolean  @default(false)
+  isOfficial       Boolean  @default(true)
+  mediaId          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  college          College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  publisher        User     @relation(fields: [publishedByAdminId], references: [id])
+
+  @@index([collegeId, isPinned, createdAt])
+}
+
+model Event {
+  id               String   @id @default(uuid())
+  collegeId        String
+  creatorId        String
+  title            String
+  category         String
+  description      String
+  venue            String
+  registrationLink String?
+  posterMediaId    String?
+  startsAt         DateTime
+  endsAt           DateTime?
+  status           String   @default("upcoming") // upcoming, past
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  college          College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  creator          User     @relation(fields: [creatorId], references: [id])
+  interests        EventInterest[]
+
+  @@index([collegeId, startsAt])
+}
+
+model EventInterest {
+  userId    String
+  eventId   String
+  status    String   // interested, going
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+}
+
+// -----------------------------------------------------------------------------
+// CLUBS
+// -----------------------------------------------------------------------------
+
+model Club {
+  id          String   @id @default(uuid())
+  collegeId   String
+  name        String
+  description String
+  logoUrl     String?
+  coverUrl    String?
+  status      String   @default("pending") // pending, approved, rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  memberships ClubMembership[]
+  posts       Post[]
+  recruitmentPosts ClubRecruitmentPost[]
+
+  @@index([collegeId, status])
+}
+
+model ClubMembership {
+  id        String   @id @default(uuid())
+  clubId    String
+  userId    String
+  role      String   @default("member") // member, admin
+  joinedAt  DateTime @default(now())
+
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+}
+
+model ClubRecruitmentPost {
+  id          String   @id @default(uuid())
+  clubId      String
+  title       String
+  description String
+  isOpen      Boolean  @default(true)
+  deadline    DateTime?
+  createdAt   DateTime @default(now())
+
+  club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  applications ClubRecruitmentApplication[]
+}
+
+model ClubRecruitmentApplication {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  message   String?
+  status    String   @default("pending") // pending, accepted, rejected
+  createdAt DateTime @default(now())
+
+  post      ClubRecruitmentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+// -----------------------------------------------------------------------------
+// MARKETPLACE, PLACEMENTS, LOST & FOUND
+// -----------------------------------------------------------------------------
+
+model MarketplaceListing {
+  id          String   @id @default(uuid())
+  collegeId   String
+  sellerId    String
+  title       String
+  description String
+  category    String
+  price       Float
+  condition   String
+  mediaIds    String[]
+  status      String   @default("available") // available, sold
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId, status, category])
+}
+
+model PlacementExperience {
+  id          String   @id @default(uuid())
+  collegeId   String
+  authorId    String
+  company     String
+  role        String
+  verdict     String   // selected, rejected, in_process
+  roundsJson  Json     // Array of round descriptions
+  isAnonymous Boolean  @default(false)
+  upvotes     Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  upvoteList  PlacementUpvote[]
+
+  @@index([collegeId, company])
+}
+
+model PlacementUpvote {
+  userId       String
+  experienceId String
+  createdAt    DateTime @default(now())
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experience   PlacementExperience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, experienceId])
+}
+
+model LostFoundReport {
+  id          String   @id @default(uuid())
+  collegeId   String
+  reporterId  String
+  type        String   // lost, found
+  category    String
+  description String
+  location    String
+  date        DateTime
+  mediaId     String?
+  status      String   @default("open") // open, resolved
+  createdAt   DateTime @default(now())
+
+  college     College  @relation(fields: [collegeId], references: [id], onDelete: Cascade)
+  reporter    User     @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([collegeId, type, status])
+}
+
+// -----------------------------------------------------------------------------
+// NOTIFICATIONS & MESSAGING
+// -----------------------------------------------------------------------------
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String
+  actorId    String?
+  type       String   // like, comment, mention, follow, etc.
+  targetType String?
+  targetId   String?
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation("NotificationTarget", fields: [userId], references: [id], onDelete: Cascade)
+  actor      User?    @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead])
+}
+
+model Conversation {
+  id           String   @id @default(uuid())
+  isGroup      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  conversationId String
+  userId         String
+  joinedAt       DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+}
+
+model Message {
+  id              String   @id @default(uuid())
+  conversationId  String
+  senderId        String
+  type            String   // text, image, voice, file
+  content         String?
+  mediaId         String?
+  duration        Int?     // for voice messages
+  replyToMessageId String?
+  createdAt       DateTime @default(now())
+
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender          User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo         Message?     @relation("MessageReplies", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies         Message[]    @relation("MessageReplies")
+  receipts        MessageReceipt[]
+
+  @@index([conversationId, createdAt])
+}
+
+model MessageReceipt {
+  messageId String
+  userId    String
+  status    String   // delivered, read
+  updatedAt DateTime @updatedAt
+
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+}
+
+// -----------------------------------------------------------------------------
+// AUDIT & MODERATION
+// -----------------------------------------------------------------------------
+
+model Report {
+  id               String   @id @default(uuid())
+  reporterId       String
+  targetType       String   // post, story, project, user, etc.
+  targetId         String
+  reason           String
+  status           String   @default("pending") // pending, resolved, dismissed
+  resolvedByAdminId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  reporter         User     @relation("ReportAuthor", fields: [reporterId], references: [id])
+  resolver         User?    @relation("ReportResolver", fields: [resolvedByAdminId], references: [id])
+
+  @@index([status, targetType])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  collegeId    String?
+  actorId      String
+  action       String
+  targetType   String
+  targetId     String
+  metadataJson Json?
+  createdAt    DateTime @default(now())
+
+  college      College? @relation(fields: [collegeId], references: [id], onDelete: SetNull)
+  actor        User     @relation(fields: [actorId], references: [id])
+
+  @@index([collegeId, createdAt])
+}
