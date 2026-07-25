@@ -1,9 +1,21 @@
+// Initialize OpenTelemetry
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+
+const sdk = new NodeSDK({
+  traceExporter: new (require('@opentelemetry/sdk-trace-base').ConsoleSpanExporter)(), // Mock exporter
+  instrumentations: [getNodeAutoInstrumentations()]
+});
+sdk.start();
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.interceptor';
+import { MetricsInterceptor } from './common/interceptors/metrics.interceptor';
 import { ConfigService } from '@nestjs/config';
 import { RedisIoAdapter } from './common/adapters/redis-io.adapter';
 
@@ -26,7 +38,11 @@ async function bootstrap() {
   );
 
   // Global Interceptors
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalInterceptors(
+    new CorrelationIdInterceptor(),
+    new LoggingInterceptor(),
+    new MetricsInterceptor()
+  );
 
   // Global Filters
   app.useGlobalFilters(new GlobalExceptionFilter());

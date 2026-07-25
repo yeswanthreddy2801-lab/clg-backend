@@ -30,7 +30,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CommonModule } from './common/common.module';
 import { InteractionsModule } from './modules/interactions/interactions.module';
 import { BullModule } from '@nestjs/bullmq';
-
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerStorageRedisService } from 'throttler-storage-redis';
 
 @Module({
   imports: [
@@ -51,6 +53,14 @@ import { BullModule } from '@nestjs/bullmq';
           },
         };
       },
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [{ ttl: 60, limit: 100 }], // default limit
+        storage: new ThrottlerStorageRedisService(config.get('REDIS_URL') || 'redis://localhost:6379'),
+      }),
     }),
     CommonModule,
     InteractionsModule,
@@ -77,6 +87,12 @@ import { BullModule } from '@nestjs/bullmq';
     RecommendationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

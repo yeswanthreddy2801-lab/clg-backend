@@ -108,6 +108,16 @@ export class FeedService {
   }
 
   async getTrending(collegeId: string) {
+    const redis = new (require('ioredis'))(process.env.REDIS_URL || 'redis://localhost:6379');
+    const cacheKey = `feed:trending:${collegeId}`;
+    
+    // 1. Check cache (Cache-Aside pattern)
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
+    // 2. Cache miss: Fetch from DB
     const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
     const posts = await prisma.post.findMany({
       where: {
@@ -125,6 +135,9 @@ export class FeedService {
         media: true,
       },
     });
+
+    // 3. Set cache with TTL (5 minutes)
+    await redis.setex(cacheKey, 300, JSON.stringify(posts));
 
     return posts;
   }
