@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { Kafka, Consumer } from 'kafkajs';
 import { PrismaClient } from '@prisma/client';
+import Redis from 'ioredis';
 
 const prisma = new PrismaClient();
 
@@ -10,8 +11,11 @@ export class NotificationConsumerService implements OnModuleInit, OnModuleDestro
   private readonly logger = new Logger(NotificationConsumerService.name);
   private kafka: Kafka;
   private consumer: Consumer;
+  private redisClient: Redis;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+    this.redisClient = new Redis(this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379');
+  }
 
   async onModuleInit() {
     const brokers = this.configService.get<string>('KAFKA_BROKERS') || 'localhost:9092';
@@ -73,7 +77,24 @@ export class NotificationConsumerService implements OnModuleInit, OnModuleDestro
       if (type === 'news' && !settings.notifyNews) return;
     }
 
-    // Create Notification
+    // Digest Batching Logic (Phase 14)
+    // For low priority notifications (e.g., likes from someone you don't follow back), batch them.
+    if (type === 'like') {
+      // Check if targetUserId follows actorId
+      const isMutual = await prisma.follow.findFirst({
+        where: { followerId: targetUserId, followingId: actorId }
+      });
+      
+      if (!isMutual) {
+        // Non-mutual like: low priority, send to digest
+        const digestKey = `digest:notification:${targetUserId}`;
+        await this.redisClient.rpush(digestKey, JSON.stringify(event));
+        this.logger.debug(`Notification queued for digest for user ${targetUserId}, type ${type} (non-mutual)`);
+        return;
+      }
+    }
+
+    // Create immediate Notification
     const notification = await prisma.notification.create({
       data: {
         userId: targetUserId,

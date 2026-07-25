@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { CreateStoryDto, CreateChapterDto } from './dto/stories.dto';
 import { Redis } from 'ioredis';
 import { ConfigService } from '@nestjs/config';
+import { ModerationService } from '../moderation/moderation.service';
 
 const prisma = new PrismaClient();
 
@@ -10,7 +11,10 @@ const prisma = new PrismaClient();
 export class StoriesService {
   private redisClient: Redis;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private readonly moderationService: ModerationService
+  ) {
     this.redisClient = new Redis(this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379');
   }
 
@@ -47,20 +51,25 @@ export class StoriesService {
   async publishStory(userId: string, collegeId: string, storyId: string) {
     const story = await prisma.story.findUnique({ 
       where: { id: storyId },
-      include: { _count: { select: { chapters: true } } },
+      include: { chapters: true } 
     });
     
     if (!story || story.collegeId !== collegeId || story.authorId !== userId) {
       throw new ForbiddenException('Cannot modify this story');
     }
 
-    if (story._count.chapters === 0) {
-      throw new BadRequestException('Cannot publish a story with zero chapters');
+    if (story.chapters.length === 0) {
+      throw new BadRequestException('Cannot publish story without chapters');
     }
+
+    // Duplicate check on publish
+    const fullText = story.title + ' ' + story.chapters.map(c => c.content).join(' ');
+    this.moderationService.checkDuplicate(collegeId, fullText, 'story')
+      .catch(e => console.error('Duplicate check failed', e));
 
     return prisma.story.update({
       where: { id: storyId },
-      data: { status: 'published' },
+      data: { status: 'published' }
     });
   }
 

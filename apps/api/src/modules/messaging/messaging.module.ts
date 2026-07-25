@@ -4,6 +4,7 @@ import { MessagingController } from './messaging.controller';
 import { MessagingGateway } from '../../gateways/messaging.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ModerationModule } from '../moderation/moderation.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         signOptions: { expiresIn: '7d' },
       }),
     }),
+    ModerationModule,
   ],
   controllers: [MessagingController],
   providers: [MessagingService, MessagingGateway],

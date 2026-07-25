@@ -1,11 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { CreateProjectDto, GetProjectsQueryDto } from './dto/projects.dto';
+import { ModerationService } from '../moderation/moderation.service';
 
 const prisma = new PrismaClient();
 
 @Injectable()
 export class ProjectsService {
+  constructor(private readonly moderationService: ModerationService) {}
+
   async createProject(userId: string, collegeId: string, dto: CreateProjectDto) {
     return prisma.$transaction(async (tx) => {
       // Create project
@@ -26,6 +29,10 @@ export class ProjectsService {
           status: 'pending', // Defaults to pending
         },
       });
+
+      // Fire and forget duplicate check
+      this.moderationService.checkDuplicate(collegeId, `${dto.title} ${dto.description}`, 'project')
+        .catch(e => console.error('Duplicate check failed', e));
 
       // Handle techStack
       if (dto.techStack && dto.techStack.length > 0) {

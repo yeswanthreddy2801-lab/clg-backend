@@ -24,6 +24,7 @@ import { MessagingModule } from './modules/messaging/messaging.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MediaModule } from './modules/media/media.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
+import { RecommendationsModule } from './modules/recommendations/recommendations.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { CommonModule } from './common/common.module';
@@ -73,6 +74,7 @@ import { BullModule } from '@nestjs/bullmq';
     AdminModule,
     MediaModule,
     ModerationModule,
+    RecommendationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

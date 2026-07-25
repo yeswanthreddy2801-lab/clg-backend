@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { MessagingService } from '../modules/messaging/messaging.service';
+import { ModerationService } from '../modules/moderation/moderation.service';
 import Redis from 'ioredis';
 import { SendMessageDto } from '../modules/messaging/dto/messaging.dto';
 import { PrismaClient } from '@prisma/client';
@@ -30,6 +31,7 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly messagingService: MessagingService,
+    private readonly moderationService: ModerationService
   ) {
     this.redis = new Redis(this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379');
   }
@@ -95,6 +97,18 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
   ) {
     try {
       const userId = client.data.user.sub;
+
+      // Privacy-respecting moderation scan
+      if (payload.type === 'text' && payload.content) {
+        // Fire and forget to not block real-time delivery
+        this.moderationService.scanContent({
+          targetType: 'message',
+          targetId: 'pending-message',
+          text: payload.content,
+          collegeId: client.data.user.collegeId
+        }).catch(e => console.error('Moderation scan failed', e));
+      }
+
       const message = await this.messagingService.saveMessage(userId, payload);
       
       // Broadcast to everyone in the conversation room
