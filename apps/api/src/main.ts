@@ -8,9 +8,9 @@ const sdk = new NodeSDK({
 });
 sdk.start();
 
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -21,6 +21,10 @@ import { RedisIoAdapter } from './common/adapters/redis-io.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Security Headers
+  // app.use(helmet()); // In production, import helmet from 'helmet'
+
   
   // Setup Redis Adapter for WebSockets
   const configService = app.get(ConfigService);
@@ -41,7 +45,8 @@ async function bootstrap() {
   app.useGlobalInterceptors(
     new CorrelationIdInterceptor(),
     new LoggingInterceptor(),
-    new MetricsInterceptor()
+    new MetricsInterceptor(),
+    new ClassSerializerInterceptor(app.get(Reflector))
   );
 
   // Global Filters
