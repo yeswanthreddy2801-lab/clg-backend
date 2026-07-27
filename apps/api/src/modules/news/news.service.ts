@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { CreateNewsDto } from './dto/news.dto';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class NewsService {

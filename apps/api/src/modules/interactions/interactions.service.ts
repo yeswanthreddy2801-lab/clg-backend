@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { NotificationEventPublisher } from '../../common/events/notification.publisher';
 import { LikeDto, CommentDto } from './dto/interactions.dto';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class InteractionsService {

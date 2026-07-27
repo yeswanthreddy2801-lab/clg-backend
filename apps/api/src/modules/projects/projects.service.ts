@@ -3,7 +3,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { CreateProjectDto, GetProjectsQueryDto } from './dto/projects.dto';
 import { ModerationService } from '../moderation/moderation.service';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class ProjectsService {

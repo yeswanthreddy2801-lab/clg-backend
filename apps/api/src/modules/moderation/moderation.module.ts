@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ModerationService } from './moderation.service';
 import { ModerationController } from './moderation.controller';
 import { ContentModerationProvider, OpenAIModerationProvider } from '../../common/providers/content-moderation.provider';
-import { RecommendationProvider, StubbedRecommendationProvider } from '../../common/providers/recommendation.provider';
+import { RecommendationProvider, OpenAIRecommendationProvider } from '../../common/providers/recommendation.provider';
 import { BullModule, InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { SpamDetectionProcessor } from './spam.processor';
@@ -18,7 +18,7 @@ import { SpamDetectionProcessor } from './spam.processor';
     ModerationService,
     SpamDetectionProcessor,
     { provide: ContentModerationProvider, useClass: OpenAIModerationProvider },
-    { provide: RecommendationProvider, useClass: StubbedRecommendationProvider }
+    { provide: RecommendationProvider, useClass: OpenAIRecommendationProvider }
   ],
   exports: [ModerationService], // So it can be injected into Feed/Talent/Marketplace directly if needed
 })

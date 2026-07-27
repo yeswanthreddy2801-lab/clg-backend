@@ -32,7 +32,6 @@ import { InteractionsModule } from './modules/interactions/interactions.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerStorageRedisService } from 'throttler-storage-redis';
 
 @Module({
   imports: [
@@ -50,6 +49,7 @@ import { ThrottlerStorageRedisService } from 'throttler-storage-redis';
             port: parseInt(url.port) || 6379,
             username: url.username,
             password: url.password,
+            tls: redisUrl.startsWith('rediss://') ? {} : undefined,
           },
         };
       },
@@ -58,8 +58,7 @@ import { ThrottlerStorageRedisService } from 'throttler-storage-redis';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        throttlers: [{ ttl: 60, limit: 100 }], // default limit
-        storage: new ThrottlerStorageRedisService(config.get('REDIS_URL') || 'redis://localhost:6379'),
+        throttlers: [{ ttl: 60, limit: 100 }], // default in-memory limit for local
       }),
     }),
     CommonModule,

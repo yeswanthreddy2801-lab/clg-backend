@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {

@@ -5,7 +5,7 @@ import { Redis } from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 import { ModerationService } from '../moderation/moderation.service';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class StoriesService {

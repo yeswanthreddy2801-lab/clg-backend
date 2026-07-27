@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma/client';
 import sharp from 'sharp';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Processor('media-processing')
 export class MediaProcessor extends WorkerHost {

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaClient } from '@prisma/client';
 import { CreateConversationDto, SendMessageDto } from './dto/messaging.dto';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class MessagingService {

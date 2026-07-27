@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaClient } from '@prisma/client';
 import { CreateClubDto, CreateRecruitmentPostDto, ApplyRecruitmentDto } from './dto/clubs.dto';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class ClubsService {

@@ -22,10 +22,15 @@ import { RedisIoAdapter } from './common/adapters/redis-io.adapter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
+  // Enable CORS for the frontend
+  app.enableCors({
+    origin: 'http://localhost:5173', // Default Vite port, adjust if needed
+    credentials: true,
+  });
+
   // Security Headers
   // app.use(helmet()); // In production, import helmet from 'helmet'
 
-  
   // Setup Redis Adapter for WebSockets
   const configService = app.get(ConfigService);
   const redisIoAdapter = new RedisIoAdapter(app, configService);

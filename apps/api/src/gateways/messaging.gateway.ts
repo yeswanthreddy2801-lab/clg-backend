@@ -16,7 +16,7 @@ import Redis from 'ioredis';
 import { SendMessageDto } from '../modules/messaging/dto/messaging.dto';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @WebSocketGateway({
   cors: { origin: '*' }

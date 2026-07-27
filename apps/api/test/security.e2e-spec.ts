@@ -30,7 +30,7 @@ describe('Security Route Audits (e2e)', () => {
     const router = server._events.request._router;
     
     // 2. Map all available routes from Express
-    const routes = [];
+    const routes: Array<{ path: string, methods: string[] }> = [];
     router.stack.forEach((layer: any) => {
       if (layer.route) {
         routes.push({ path: layer.route.path, methods: Object.keys(layer.route.methods) });

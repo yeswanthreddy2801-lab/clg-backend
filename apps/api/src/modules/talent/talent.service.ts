@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { SearchService } from '../search/search.service';
 import { UpsertTalentProfileDto } from './dto/talent.dto';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class TalentService {

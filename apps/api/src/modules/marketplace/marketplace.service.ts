@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaClient, Prisma } from '@prisma/client';
 import { CreateMarketplaceListingDto, UpdateMarketplaceStatusDto, GetMarketplaceListingsDto } from './dto/marketplace.dto';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class MarketplaceService {

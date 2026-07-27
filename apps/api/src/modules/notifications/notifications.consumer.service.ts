@@ -4,7 +4,7 @@ import { Kafka, Consumer } from 'kafkajs';
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class NotificationConsumerService implements OnModuleInit, OnModuleDestroy {

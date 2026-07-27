@@ -4,7 +4,7 @@ import { UpdateProfileDto, UpdateSettingsDto } from './dto/users.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class UsersService {

@@ -4,7 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { NotificationEventPublisher } from '../../common/events/notification.publisher';
 import { ModerationService } from '../moderation/moderation.service';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class FeedService {

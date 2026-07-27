@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaClient, Prisma } from '@prisma/client';
 import { CreateLostFoundReportDto, GetLostFoundReportsDto } from './dto/lost-and-found.dto';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class LostAndFoundService {

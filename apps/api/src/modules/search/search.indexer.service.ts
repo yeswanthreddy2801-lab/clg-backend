@@ -13,6 +13,9 @@ export class SearchIndexerService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly configService: ConfigService) {}
 
   async onModuleInit() {
+    this.logger.warn('Skipping Kafka/OpenSearch initialization for dev speed');
+    return;
+    
     this.osClient = new Client({
       node: this.configService.get<string>('OPENSEARCH_URL') || 'http://localhost:9200',
     });

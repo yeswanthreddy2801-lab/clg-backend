@@ -4,7 +4,7 @@ import { CreateReelDto } from './dto/reels.dto';
 import { Redis } from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class ReelsService {

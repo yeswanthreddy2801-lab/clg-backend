@@ -5,7 +5,7 @@ import { ContentModerationProvider } from '../../common/providers/content-modera
 import { RecommendationProvider } from '../../common/providers/recommendation.provider';
 import * as crypto from 'crypto';
 
-const prisma = new PrismaClient();
+import { prismaClient as prisma } from 'src/prisma/client';
 
 @Injectable()
 export class ModerationService {
